@@ -530,6 +530,14 @@ int step() {
   return 0;
 }
 
+void irq() {
+  cpu.irq = true;
+}
+
+void nmi() {
+  cpu.nmi = true;
+}
+
 void reset() {
   cpu.pc = readw(RST_VEC);
   cpu.sp = 0xff;

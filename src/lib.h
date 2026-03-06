@@ -12,5 +12,7 @@ struct cpu {
 
 int step();
 void reset();
+void irq();
+void nmi();
 
 #endif // _LIB_H_
