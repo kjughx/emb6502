@@ -8,4 +8,4 @@ $(BUILD):
 
 .PHONY: clean
 clean:
-	@rm -rf $(BUILD)/* emu asm
+	@rm -rf emu
