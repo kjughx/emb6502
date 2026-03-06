@@ -7,15 +7,17 @@
 
 #include "lib.h"
 
+#define MEMORY_SIZE 1 << 16
+
 struct cpu cpu;
-uint8_t memory[1 << 16];
+uint8_t memory[MEMORY_SIZE];
 
 void usage() {
   printf("Usage: ./emu <rom>");
 }
 
 int main(int argc, const char* argv[]) {
-  if (argc == 1) {
+  if (argc != 2) {
     usage();
     return 1;
   }
@@ -26,7 +28,7 @@ int main(int argc, const char* argv[]) {
   if (fd < 0) {
       fprintf(stderr, "ERROR: Could not open file %s: %s\n", filename, strerror(errno));
   }
-  ssize_t n = read(fd, memory, 1 << 16);
+  ssize_t n = read(fd, memory, MEMORY_SIZE);
   if (n < 0) {
       fprintf(stderr, "ERROR: Could not read file %s: %s\n", filename, strerror(errno));
   }
