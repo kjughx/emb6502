@@ -10,6 +10,8 @@ struct cpu {
   uint64_t clk;
 };
 
+extern bool trace_enabled;
+
 int step();
 void reset();
 void irq();

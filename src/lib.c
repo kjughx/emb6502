@@ -1,14 +1,14 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "lib.h"
 
-#if TRACE
-#include <stdio.h>
-#define T(x) x
-#else
-#define T(x)
-#endif
+bool trace_enabled = false;
+#define trace(fmt, ...) do {                    \
+    if (trace_enabled)                          \
+      printf(fmt, ##__VA_ARGS__);     \
+  } while(0)
 
 void abort(void);
 
@@ -73,7 +73,7 @@ enum {
 };
 
 void trap() {
-  T(printf("TRAP: cpu.pc: 0x%2x\n", cpu.pc));
+  trace("TRAP: cpu.pc: 0x%2x\n", cpu.pc);
   abort();
 }
 
@@ -478,41 +478,15 @@ static char* ins[] = {
     "trap", "sbc", "inc",  "trap",
 };
 
-#if TRACE
 void print_sr() {
-  BIT_CARRY,
-  BIT_ZERO,
-  BIT_INT,
-  BIT_DEC,
-  BIT_BRK,
-  BIT_UNUSED,
-  BIT_OF,
-  BIT_NEG,
-  printf("\tN: %b, V: %b, D: %b, I: %b, Z: %b, C: %b\n",
-         FLAG_GET(FLAG_NEG), FLAG_GET(FLAG_OF), FLAG_GET(FLAG_DEC),
-         FLAG_GET(FLAG_INT), FLAG_GET(FLAG_ZERO),
-         FLAG_GET(FLAG_CARRY));
+  trace("\tN: %b, V: %b, D: %b, I: %b, Z: %b, C: %b\n",
+        FLAG_GET(FLAG_NEG), FLAG_GET(FLAG_OF), FLAG_GET(FLAG_DEC),
+        FLAG_GET(FLAG_INT), FLAG_GET(FLAG_ZERO),
+        FLAG_GET(FLAG_CARRY));
 }
 void print_cpu() {
-  printf("\tA: 0x%02x, X: 0x%02x, Y: 0x%02x, SP: 0x%02x\n", cpu.ac, cpu.x, cpu.y, cpu.sp);
+  trace("\tA: 0x%02x, X: 0x%02x, Y: 0x%02x, SP: 0x%02x\n", cpu.ac, cpu.x, cpu.y, cpu.sp);
 }
-#define trace() do {\
-    printf("%3s (%02X)", ins[opc], opc); \
-    if (mode != MODE_IMPL && mode != MODE_ACC) { \
-      if (mode == MODE_IMM) \
-        printf(" #"); \
-      else           \
-        printf(" $"); \
-      printf("0x%04x (%d)", arg, mode);                                          \
-    }                                                                   \
-    printf("\n");                                                       \
-    print_cpu();                                                        \
-    print_sr();                                                         \
-  } while(0);
-
-#else
-#define trace()
-#endif
 
 int step() {
   if (cpu.nmi)
@@ -520,12 +494,23 @@ int step() {
   else if (cpu.irq && FLAG_GET(FLAG_INT))
     cpu.pc = readw(IRQ_VEC);
 
-  T(printf("0x%04x: ", cpu.pc);)
   word_t oldpc = cpu.pc;
   byte_t opc = next_pc();
   (*get[opc])();
   (*ops[opc])();
-  trace();
+
+  trace("0x%04x: %3s (%02X)", oldpc, ins[opc], opc);
+  if (mode != MODE_IMPL && mode != MODE_ACC) {
+    if (mode == MODE_IMM)
+      trace(" #");
+    else
+      trace(" $");
+    trace("0x%04x (%d)", arg, mode);
+  }
+  trace("\n");
+  print_cpu();
+  print_sr();
+
   if (cpu.pc == oldpc) return 1;
   return 0;
 }
