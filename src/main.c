@@ -28,6 +28,13 @@ int main(int argc, const char* argv[]) {
   if (fd < 0) {
       fprintf(stderr, "ERROR: Could not open file %s: %s\n", filename, strerror(errno));
   }
+
+  ssize_t filesize = lseek(fd, 0, SEEK_END);
+  if (filesize > MEMORY_SIZE) {
+      fprintf(stderr, "ERROR: Program size exceeds memory size, aborting\n");
+      return 1;
+  }
+
   ssize_t n = read(fd, memory, MEMORY_SIZE);
   if (n < 0) {
       fprintf(stderr, "ERROR: Could not read file %s: %s\n", filename, strerror(errno));
