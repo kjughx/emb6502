@@ -359,7 +359,7 @@ void cmp() {
 void dec() {
   res = getvalue() - 1;
   checkneg(res);
-  checkzero(res);
+  checkzero(res & 0xff);
   setvalue(res);
 }
 void iny() {
