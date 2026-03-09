@@ -462,7 +462,7 @@ static char* ins[] = {
 int step() {
   if (cpu.nmi)
     cpu.pc = readw(NMI_VEC);
-  else if (cpu.irq && FLAG_GET(FLAG_INT))
+  else if (cpu.irq && !FLAG_GET(FLAG_INT))
     cpu.pc = readw(IRQ_VEC);
 
   word_t oldpc = cpu.pc;
