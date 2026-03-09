@@ -271,9 +271,9 @@ void adc() {
 }
 void ror() {
   res = (word_t)getvalue() >> 1 | (FLAG_GET(FLAG_CARRY) << 7);
-  checkneg(res);
-  checkzero(res);
-  cpu.sr |= (getvalue() & 0x01) << BIT_CARRY;
+  checkneg(res & 0xff);
+  checkzero(res & 0xff);
+  BIT_SET(cpu.sr, BIT_GET(getvalue(), BIT_CARRY), BIT_CARRY);
   setvalue(res & 0xff);
 }
 void pla() {
