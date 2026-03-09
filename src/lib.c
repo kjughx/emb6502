@@ -249,8 +249,8 @@ void eor() {
 void lsr() {
   res = getvalue() >> 1;
   FLAG_CLR(FLAG_NEG);
-  checkzero(res);
-  checkcarry(res);
+  checkzero(res & 0xff);
+  BIT_SET(cpu.sr, BIT_GET(getvalue(), BIT_CARRY), BIT_CARRY);
   setvalue(res);
 }
 void pha() { pushb(cpu.ac); }
