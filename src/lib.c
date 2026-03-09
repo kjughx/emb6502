@@ -210,10 +210,9 @@ void jsr() {
   cpu.pc = arg;
 }
 void and () {
-  res = (word_t)cpu.ac & getvalue();
-  checkneg(res);
-  checkzero(res);
-  setvalue(res);
+  cpu.ac &= getvalue();
+  checkzero(cpu.ac);
+  checkneg(cpu.ac);
 }
 void bit() {
   res = getvalue() & 0xff;
