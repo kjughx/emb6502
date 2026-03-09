@@ -194,9 +194,9 @@ void ora() {
 }
 void asl() {
   res = getvalue() << 1;
-  BIT_SET(cpu.sr, BIT_GET(res, SIGN_BIT), BIT_CARRY);
-  checkneg(res);
-  checkzero(res);
+  BIT_SET(cpu.sr, BIT_GET(getvalue(), SIGN_BIT), BIT_CARRY);
+  checkneg(res & 0xff);
+  checkzero(res & 0xff);
   setvalue(res);
 }
 void php() { pushb(cpu.sr | FLAG_BRK | FLAG_UNUSED); }
