@@ -224,7 +224,7 @@ void bit() {
 void rol() {
   res = (word_t)getvalue() << 1 | FLAG_GET(FLAG_CARRY);
   checkneg(res);
-  checkzero(res);
+  checkzero(res & 0xff);
   checkcarry(res);
   setvalue(res & 0xff);
 }
