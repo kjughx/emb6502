@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "lib.h"
 
@@ -10,66 +11,47 @@ bool trace_enabled = false;
       printf(fmt, ##__VA_ARGS__);     \
   } while(0)
 
+#define trace_ins(pc, opc) do {                              \
+    trace("0x%04x: %3s (%02X)", (pc), ins[(opc)], (opc));    \
+    if (mode != MODE_IMPL && mode != MODE_ACC) {             \
+      if (mode == MODE_IMM)                                  \
+        trace(" #");                                         \
+      else                                                   \
+        trace(" $");                                         \
+      trace("0x%04x (%s)", arg, modes_str[mode]);                \
+    }                                                                   \
+    trace("\n");                                                        \
+    trace("\tA: 0x%02x, X: 0x%02x, Y: 0x%02x, SP: 0x%02x\n", cpu.ac, cpu.x, cpu.y, cpu.sp); \
+    trace("\tN: %b, V: %b, D: %b, I: %b, Z: %b, C: %b\n",               \
+          FLAG_GET(FLAG_NEG), FLAG_GET(FLAG_OF), FLAG_GET(FLAG_DEC),    \
+          FLAG_GET(FLAG_INT), FLAG_GET(FLAG_ZERO),                      \
+          FLAG_GET(FLAG_CARRY));                                        \
+  } while(0)                                                            \
+
 void abort(void);
 
 extern struct cpu cpu;
 extern byte_t memory[65536];
 
-#define NMI_VEC 0xfffa
-#define RST_VEC 0xfffc
-#define IRQ_VEC 0xfffe
-
-#define STACK_START 0x100
-
-byte_t mode;
+enum Mode mode;
 word_t arg;
 word_t res;
 word_t t1, t2;
 
-#define FLAG_SET(flag) cpu.sr |= (flag);
-#define FLAG_CLR(flag) cpu.sr &= ~(flag);
-#define FLAG_GET(flag) (!!(cpu.sr & (flag)))
-#define BIT_IS_SET(v, b) (!!((v) & (b)))
-#define BIT_SET(l, v, b) ((l) = (l) & ~(1 << (b)) | ((v) << (b)))
-
-#define SIGN_BIT 0b10000000
-
-enum {
-  BIT_CARRY,
-  BIT_ZERO,
-  BIT_INT,
-  BIT_DEC,
-  BIT_BRK,
-  BIT_UNUSED,
-  BIT_OF,
-  BIT_NEG,
-};
-
-enum {
-  FLAG_CARRY = 1 << BIT_CARRY,
-  FLAG_ZERO = 1 << BIT_ZERO,
-  FLAG_INT = 1 << BIT_INT,
-  FLAG_DEC = 1 << BIT_DEC,
-  FLAG_BRK = 1 << BIT_BRK,
-  FLAG_UNUSED = 1 << BIT_UNUSED,
-  FLAG_OF = 1 << BIT_OF,
-  FLAG_NEG = 1 << BIT_NEG,
-};
-
-enum {
-  MODE_ACC,
-  MODE_IMPL,
-  MODE_IMM,
-  MODE_REL,
-  MODE_ZPG,
-  MODE_ZPGX,
-  MODE_ZPGY,
-  MODE_ABS,
-  MODE_ABSX,
-  MODE_ABSY,
-  MODE_IND,
-  MODE_INDX,
-  MODE_INDY,
+const char *modes_str[] = {
+  "acc",
+  "impl",
+  "imm",
+  "rel",
+  "zpg",
+  "zpgx",
+  "zpgy",
+  "abs",
+  "absx",
+  "absy",
+  "ind",
+  "indx",
+  "indy",
 };
 
 void trap() {
@@ -122,6 +104,7 @@ void abs() {
   mode = MODE_ABS;
   arg = (uint16_t)next_pc() | ((uint16_t)next_pc() << 8);
 }
+void _abs() { abs(); }; // For testing
 void absx() {
   mode = MODE_ABSX;
   arg = ((uint16_t)next_pc() | ((uint16_t)next_pc() << 8)) + (uint16_t)cpu.x;
@@ -173,15 +156,15 @@ static void (*get[])(void) = {
 };
 
 #define checkneg(n)                                                            \
-  cpu.sr = (cpu.sr & ~FLAG_NEG) | (BIT_IS_SET((n), SIGN_BIT) << BIT_NEG);
+  cpu.sr = (cpu.sr & ~FLAG_NEG) | (BIT_GET((n), SIGN_BIT) << BIT_NEG);
 #define checkzero(n)                                                           \
   cpu.sr = (cpu.sr & ~FLAG_ZERO) | (!!((n) == 0) << BIT_ZERO);
 #define checkcarry(n)                                                          \
   cpu.sr = (cpu.sr & ~FLAG_CARRY) | (!!((n) & 0xff00) << BIT_CARRY);
 #define checkof(r, l, n)                                                       \
   cpu.sr = (cpu.sr & ~FLAG_OF) |                                               \
-           ((!!(((BIT_IS_SET((r), SIGN_BIT)) & (BIT_IS_SET((l), SIGN_BIT))) ^  \
-                (BIT_IS_SET((n), SIGN_BIT))))                                  \
+           ((!!(((BIT_GET((r), SIGN_BIT)) & (BIT_GET((l), SIGN_BIT))) ^  \
+                (BIT_GET((n), SIGN_BIT))))                                  \
             << BIT_OF);
 
 word_t getvalue() {
@@ -213,7 +196,7 @@ void ora() {
 }
 void asl() {
   res = getvalue() << 1;
-  BIT_SET(cpu.sr, BIT_IS_SET(res, SIGN_BIT), BIT_CARRY);
+  BIT_SET(cpu.sr, BIT_GET(res, SIGN_BIT), BIT_CARRY);
   checkneg(res);
   checkzero(res);
   setvalue(res);
@@ -365,13 +348,13 @@ void tsx() {
 }
 void cpy() {
   res = cpu.y - getvalue();
-  BIT_SET(cpu.sr, BIT_IS_SET(res, SIGN_BIT), BIT_NEG);
+  BIT_SET(cpu.sr, BIT_GET(res, SIGN_BIT), BIT_NEG);
   BIT_SET(cpu.sr, (int8_t)cpu.y >= (int8_t)getvalue(),      BIT_CARRY);
   BIT_SET(cpu.sr, cpu.y == getvalue(),      BIT_ZERO);
 }
 void cmp() {
   res = cpu.ac - getvalue();
-  BIT_SET(cpu.sr, BIT_IS_SET(res, SIGN_BIT), BIT_NEG);
+  BIT_SET(cpu.sr, BIT_GET(res, SIGN_BIT), BIT_NEG);
   BIT_SET(cpu.sr, (int8_t)cpu.ac >= (int8_t)getvalue(),      BIT_CARRY);
   BIT_SET(cpu.sr, cpu.ac == getvalue(),      BIT_ZERO);
 }
@@ -398,7 +381,7 @@ void bne() {
 void cld() { FLAG_CLR(FLAG_DEC); }
 void cpx() {
   res = cpu.x - getvalue();
-  BIT_SET(cpu.sr, BIT_IS_SET(res, SIGN_BIT), BIT_NEG);
+  BIT_SET(cpu.sr, BIT_GET(res, SIGN_BIT), BIT_NEG);
   BIT_SET(cpu.sr, (int8_t)cpu.x >= (int8_t)getvalue(),      BIT_CARRY);
   BIT_SET(cpu.sr, cpu.x == getvalue(),      BIT_ZERO);
 }
@@ -478,16 +461,6 @@ static char* ins[] = {
     "trap", "sbc", "inc",  "trap",
 };
 
-void print_sr() {
-  trace("\tN: %b, V: %b, D: %b, I: %b, Z: %b, C: %b\n",
-        FLAG_GET(FLAG_NEG), FLAG_GET(FLAG_OF), FLAG_GET(FLAG_DEC),
-        FLAG_GET(FLAG_INT), FLAG_GET(FLAG_ZERO),
-        FLAG_GET(FLAG_CARRY));
-}
-void print_cpu() {
-  trace("\tA: 0x%02x, X: 0x%02x, Y: 0x%02x, SP: 0x%02x\n", cpu.ac, cpu.x, cpu.y, cpu.sp);
-}
-
 int step() {
   if (cpu.nmi)
     cpu.pc = readw(NMI_VEC);
@@ -499,17 +472,12 @@ int step() {
   (*get[opc])();
   (*ops[opc])();
 
-  trace("0x%04x: %3s (%02X)", oldpc, ins[opc], opc);
-  if (mode != MODE_IMPL && mode != MODE_ACC) {
-    if (mode == MODE_IMM)
-      trace(" #");
-    else
-      trace(" $");
-    trace("0x%04x (%d)", arg, mode);
-  }
-  trace("\n");
-  print_cpu();
-  print_sr();
+  /* It's important that the macro `trace_ins` is here because it depends on the globals
+     - mode
+     - arg
+     and the state of `cpu` after the operation
+  */
+  trace_ins(oldpc, opc);
 
   if (cpu.pc == oldpc) return 1;
   return 0;

@@ -4,20 +4,19 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 #include "lib.h"
-
-#define MEMORY_SIZE 1 << 16
 
 struct cpu cpu;
 uint8_t memory[MEMORY_SIZE];
 
 void usage() {
-  printf("Usage: ./emu <rom>");
+  printf("Usage: ./emu <rom> [<entry>]");
 }
 
 int main(int argc, const char* argv[]) {
-  if (argc != 2) {
+  if (argc == 1) {
     usage();
     return 1;
   }
@@ -42,9 +41,23 @@ int main(int argc, const char* argv[]) {
   }
 
   reset();
+  if (argc > 2) {
+    char *endptr;
+    long value = strtol(argv[2], &endptr, 16);
 
-  while (step())
-    ;
+    if (*endptr != '\0') {
+      fprintf(stderr, "ERROR: Invalid entry point: %s\n", argv[2]);
+      return 1;
+    }
+    cpu.pc = value;
+  }
+
+  trace_enabled = true;
+  while (cpu.pc != 0x10A5) {
+    if (step()) return 1;
+  }
+
+  printf("INFO: Program halted at 0x%04X\n", cpu.pc);
 
   return 0;
 }
