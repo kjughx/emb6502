@@ -122,12 +122,12 @@ void ind() {
 void indx() {
   mode = MODE_INDX;
   byte_t ll = next_pc();
-  arg = memory[(memory[ll + cpu.x]) | (memory[ll + cpu.x + 1] << 8)];
+  arg = memory[(byte_t)(ll + cpu.x)] | (memory[ll + cpu.x + 1] << 8);
 }
 void indy() {
   mode = MODE_INDY;
   byte_t ll = next_pc();
-  arg = (uint16_t)memory[memory[ll] | (memory[ll + 1] << 8)] + (uint16_t)cpu.y;
+  arg = (memory[ll] | (memory[ll + 1] << 8)) + cpu.y;
 }
 
 static void (*get[])(void) = {
