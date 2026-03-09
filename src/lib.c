@@ -379,9 +379,9 @@ void bne() {
 void cld() { FLAG_CLR(FLAG_DEC); }
 void cpx() {
   res = cpu.x - getvalue();
-  BIT_SET(cpu.sr, BIT_GET(res, SIGN_BIT), BIT_NEG);
-  BIT_SET(cpu.sr, (int8_t)cpu.x >= (int8_t)getvalue(),      BIT_CARRY);
-  BIT_SET(cpu.sr, cpu.x == getvalue(),      BIT_ZERO);
+  checkneg(res);
+  BIT_SET(cpu.sr, cpu.x >= getvalue(), BIT_CARRY);
+  BIT_SET(cpu.sr, cpu.x == getvalue(), BIT_ZERO);
 }
 void sbc() {
   res = cpu.ac - getvalue() - !FLAG_GET(FLAG_CARRY);
