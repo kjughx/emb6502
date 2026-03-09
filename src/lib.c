@@ -346,9 +346,9 @@ void tsx() {
 }
 void cpy() {
   res = cpu.y - getvalue();
-  BIT_SET(cpu.sr, BIT_GET(res, SIGN_BIT), BIT_NEG);
-  BIT_SET(cpu.sr, (int8_t)cpu.y >= (int8_t)getvalue(),      BIT_CARRY);
-  BIT_SET(cpu.sr, cpu.y == getvalue(),      BIT_ZERO);
+  checkneg(res);
+  BIT_SET(cpu.sr, cpu.y >= getvalue(), BIT_CARRY);
+  BIT_SET(cpu.sr, cpu.y == getvalue(), BIT_ZERO);
 }
 void cmp() {
   res = cpu.ac - getvalue();
