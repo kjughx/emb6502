@@ -384,9 +384,9 @@ void cpx() {
   BIT_SET(cpu.sr, cpu.x == getvalue(), BIT_ZERO);
 }
 void sbc() {
-  res = cpu.ac - getvalue() - !FLAG_GET(FLAG_CARRY);
+  res = cpu.ac + ~getvalue() + FLAG_GET(FLAG_CARRY);
   checkneg(res);
-  checkzero(res);
+  checkzero(res & 0xff);
   checkof(cpu.ac, getvalue(), res);
   cpu.ac = res;
 }
