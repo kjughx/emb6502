@@ -163,9 +163,7 @@ static void (*get[])(void) = {
   cpu.sr = (cpu.sr & ~FLAG_CARRY) | (!!((n) & 0xff00) << BIT_CARRY);
 #define checkof(r, l, n)                                                       \
   cpu.sr = (cpu.sr & ~FLAG_OF) |                                               \
-           ((!!(((BIT_GET((r), SIGN_BIT)) & (BIT_GET((l), SIGN_BIT))) ^  \
-                (BIT_GET((n), SIGN_BIT))))                                  \
-            << BIT_OF);
+           (BIT_GET(~((l) ^ (r)) & ((l) ^ (n)), SIGN_BIT) << BIT_OF);
 
 word_t getvalue() {
   if (mode == MODE_ACC)
