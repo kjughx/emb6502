@@ -219,7 +219,7 @@ void bit() {
   cpu.sr =
       (cpu.sr & ~(FLAG_NEG | FLAG_OF)) | (res & FLAG_NEG) | (res & FLAG_OF);
   res &= (word_t)cpu.ac;
-  checkzero(res);
+  checkzero(res & 0xff);
 }
 void rol() {
   res = (word_t)getvalue() << 1 | FLAG_GET(FLAG_CARRY);
