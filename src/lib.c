@@ -490,6 +490,8 @@ void nmi() {
 }
 
 void reset() {
+  memset(&cpu.pc, 0, sizeof(struct cpu));
+
   cpu.pc = readw(RST_VEC);
   cpu.sp = 0xff;
   cpu.sr = 0;
