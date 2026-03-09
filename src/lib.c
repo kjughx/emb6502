@@ -243,7 +243,7 @@ void rti() {
 void eor() {
   res = (byte_t)cpu.ac ^ getvalue();
   checkneg(res);
-  checkzero(res);
+  checkzero(res & 0xff);
   cpu.ac = res;
 }
 void lsr() {
