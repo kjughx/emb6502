@@ -263,9 +263,10 @@ void cli() { FLAG_CLR(FLAG_INT); }
 void rts() { cpu.pc = pullw() + 1; }
 void adc() {
   res = cpu.ac + getvalue() + FLAG_GET(FLAG_CARRY);
-  checkneg(res);
-  checkzero(res);
-  checkof(cpu.ac, getvalue(), res);
+  checkcarry(res);
+  checkneg(res & 0xff);
+  checkzero(res & 0xff);
+  checkof(cpu.ac, getvalue(), res & 0xff);
   cpu.ac = res;
 }
 void ror() {
